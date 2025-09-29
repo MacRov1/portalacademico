@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Selección de Materias</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-gradient-to-br from-blue-50 to-gray-100 flex flex-col min-h-screen font-sans">
+  <div class="container mx-auto p-6 flex-grow">
+    <h1 class="text-4xl font-extrabold mb-6 text-gray-800 text-center">Selección de Materias para Cursar</h1>
+
+    <% if (typeof error !== 'undefined' && error) { %>
+      <p class="text-red-500 mb-4 font-medium text-center"><%= error %></p>
+    <% } %>
+    <% if (typeof success !== 'undefined' && success) { %>
+      <p class="text-green-500 mb-4 font-medium text-center"><%= success %></p>
+    <% } %>
+
+    <form action="/student/selection" method="POST" id="selectionForm">
+      <h3 class="text-xl font-semibold mb-4 text-gray-700">Materias</h3>
+
+      <% if (groupedSubjects && Object.keys(groupedSubjects).length > 0) { %>
+        <% Object.keys(groupedSubjects).sort((a,b) => a - b).forEach(semester => { %>
+          <div class="mb-6 bg-white rounded-2xl shadow-lg p-4 text-center">
+            <h4 class="text-lg font-bold mb-3 text-gray-800">Semestre <%= semester %></h4>
+
+            <div class="overflow-x-auto">
+              <table class="min-w-full table-auto mx-auto">
+                <thead class="bg-gray-100">
+                  <tr class="text-center">
+                    <th class="px-4 py-2 w-24">Seleccionar</th>
+                    <th class="px-4 py-2 w-24">Código</th>
+                    <th class="px-4 py-2 w-40">Nombre</th>
+                    <th class="px-4 py-2 w-20">Créditos</th>
+                    <th class="px-4 py-2 w-72">Estado / Observaciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% groupedSubjects[semester].forEach(subject => { 
+                       const isDisabled = subject.isApproved || subject.isInProcess || !subject.eligible;
+                       let displayReasons = subject.eligible ? [] : subject.reasons;
+                       let statusLabel = '';
+                       if (subject.isApproved) {
+                         statusLabel = 'Ya aprobada';
+                       } else if (subject.isInProcess) {
+                         statusLabel = 'En proceso';
+                         if (displayReasons.length === 0) {
+                           displayReasons = ['La materia ya está en tu historial en proceso.'];
+                         }
+                       }
+                       const isCurrentlySelected = (typeof selectedIds !== 'undefined' && selectedIds && selectedIds.includes(subject._id.toString())) ||
+                                           (typeof selectedSubjects !== 'undefined' && selectedSubjects.some(s => s._id.toString() === subject._id.toString()));
+                  %>
+                    <tr class="border-b hover:bg-gray-50 transition">
+                      <td class="px-4 py-3 align-top text-center">
+                        <input 
+                          type="checkbox" 
+                          name="selectedSubjects" 
+                          value="<%= subject._id %>" 
+                          class="subject-checkbox"
+                          style="width:18px;height:18px;"
+                          <%= isDisabled ? "disabled" : "" %>
+                          <%= isCurrentlySelected ? "checked" : "" %>
+                          data-subject='<%= JSON.stringify({ id: subject._id, name: subject.name, code: subject.code, credits: subject.credits, semester: subject.semester }) %>'>
+                      </td>
+                      <td class="px-4 py-3 align-top text-center"><%= subject.code %></td>
+                      <td class="px-4 py-3 font-semibold text-gray-800 align-top text-center truncate"><%= subject.name %></td>
+                      <td class="px-4 py-3 align-top text-center"><%= subject.credits %></td>
+                      <td class="px-4 py-3 align-top text-sm text-center">
+                        <% if (isDisabled) { %>
+                          <% if (subject.isApproved) { %>
+                            <span class="text-green-600 font-semibold"><%= statusLabel %></span>
+                          <% } else if (subject.isInProcess) { %>
+                            <span class="text-yellow-600 font-semibold"><%= statusLabel %></span>
+                          <% } else { %>
+                            <span class="text-red-600 font-semibold">No elegible</span>
+
+                            <% if (displayReasons.length > 0) { %>
+                              <!-- Botón Ver detalles / Ocultar -->
+                              <button 
+                                type="button" 
+                                id="toggle-btn-<%= subject._id %>"
+                                class="ml-2 bg-blue-100 hover:bg-blue-200 text-blue-700 text-xs font-semibold px-2 py-1 rounded-lg shadow-sm transform hover:scale-105 transition duration-200"
+                                onclick="toggleReasons('<%= subject._id %>')">
+                                Ver detalles
+                              </button>
+
+                              <!-- Caja con materias faltantes -->
+                              <div 
+                                id="reasons-<%= subject._id %>" 
+                                class="hidden mt-2 text-gray-700 text-xs bg-gray-50 border border-gray-200 rounded-lg p-2 text-left max-w-xs mx-auto transition-all duration-300 ease-in-out">
+                                <span class="font-semibold block mb-1">Faltan:</span>
+                                <ul class="list-disc list-inside">
+                                  <% displayReasons.forEach(reason => { %>
+                                    <li><%= reason %></li>
+                                  <% }) %>
+                                </ul>
+                              </div>
+                            <% } %>
+                          <% } %>
+                        <% } %>
+
+                        <% if (isCurrentlySelected && !isDisabled) { %>
+                          <div class="text-blue-600 font-semibold mt-1">(Seleccionada)</div>
+                        <% } %>
+                      </td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        <% }) %>
+
+        <div class="mb-8 text-center">
+          <button type="submit" 
+                  class="bg-blue-500 text-white font-medium px-6 py-3 rounded-lg shadow-md transform hover:scale-105 hover:bg-blue-600 transition duration-300 ease-in-out">
+            <%= (typeof selectedSubjects !== 'undefined' && selectedSubjects && selectedSubjects.length > 0) ? 'Actualizar Selección' : 'Seleccionar y Verificar' %>
+          </button>
+        </div>
+      <% } else { %>
+        <p class="text-gray-600">No hay materias disponibles.</p>
+      <% } %>
+    </form>
+
+    <!-- Cronograma de Horarios (Tabla tipo calendario) -->
+    <div class="mt-8 text-center">
+      <h3 class="text-xl font-semibold mb-3 text-gray-800">Cronograma de Horarios</h3>
+
+      <% 
+        // Definir franjas horarias (de 8:00 a 00:00, cada hora)
+        const timeSlots = [];
+        for (let hour = 8; hour <= 23; hour++) {
+          timeSlots.push(`${hour.toString().padStart(2, '0')}:00-${hour.toString().padStart(2, '0')}:59`);
+        }
+      %>
+
+      <% if (typeof allScheduledSubjects !== 'undefined' && allScheduledSubjects && allScheduledSubjects.length > 0) { %>
+        <% if (typeof globalConflicts !== 'undefined' && globalConflicts && globalConflicts.length > 0) { %>
+          <div class="bg-red-100 p-3 mb-3 rounded text-red-700 font-medium shadow">
+            <strong>Advertencia:</strong> Hay <%= globalConflicts.length %> choque(s) de horario en el cronograma propuesto.
+          </div>
+        <% } %>
+
+        <!-- Tabla de cronograma -->
+        <div class="bg-white rounded-2xl shadow overflow-x-auto mb-3 inline-block">
+          <table class="min-w-full table-auto border-collapse mx-auto">
+            <thead class="bg-gray-200">
+              <tr>
+                <th class="px-4 py-2 text-left border">Hora</th>
+                <th class="px-4 py-2 text-left border">Lunes</th>
+                <th class="px-4 py-2 text-left border">Martes</th>
+                <th class="px-4 py-2 text-left border">Miércoles</th>
+                <th class="px-4 py-2 text-left border">Jueves</th>
+                <th class="px-4 py-2 text-left border">Viernes</th>
+                <th class="px-4 py-2 text-left border">Sábado</th>
+                <th class="px-4 py-2 text-left border">Domingo</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% 
+                // Mapa para almacenar asignaciones por día y hora
+                const scheduleMap = {};
+                ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'].forEach(day => {
+                  scheduleMap[day] = {};
+                  timeSlots.forEach(slot => {
+                    scheduleMap[day][slot] = [];
+                  });
+                });
+
+                // Llenar el mapa con las materias, ocupando todas las franjas horarias correspondientes
+                allScheduledSubjects.forEach(subject => {
+                  const state = inProgressSubjects.some(ip => ip.id === subject.id) ? 'En Progreso' : 'Propuesta';
+                  (subject.schedule || []).forEach(slot => {
+                    const [startTime, endTime] = slot.time.split('-');
+                    const startHour = parseInt(startTime.split(':')[0]);
+                    const endHour = parseInt(endTime.split(':')[0]);
+                    for (let hour = startHour; hour <= endHour; hour++) {
+                      if (hour >= 8 && hour <= 23) { // Limitar al rango 8:00-00:00
+                        const slotKey = `${hour.toString().padStart(2, '0')}:00-${hour.toString().padStart(2, '0')}:59`;
+                        if (scheduleMap[slot.day] && scheduleMap[slot.day][slotKey]) {
+                          scheduleMap[slot.day][slotKey].push({
+                            name: subject.code,
+                            state: state
+                          });
+                        }
+                      }
+                    }
+                  });
+                });
+
+                // Generar filas de la tabla
+                timeSlots.forEach(slot => { %>
+                  <tr class="border-b">
+                    <td class="px-4 py-2 border font-semibold text-gray-800"><%= slot.split('-')[0] %></td>
+                    <% ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'].forEach(day => { %>
+                      <td class="px-4 py-2 border">
+                        <% scheduleMap[day][slot].forEach(entry => { %>
+                          <div class="<%= entry.state === 'En Progreso' ? 'text-orange-600' : 'text-blue-600' %> font-semibold">
+                            <%= entry.name %>
+                          </div>
+                        <% }); %>
+                        <% if (scheduleMap[day][slot].length > 1) { %>
+                          <div class="text-red-600 text-sm font-semibold">Choque de horario</div>
+                        <% } %>
+                      </td>
+                    <% }); %>
+                  </tr>
+                <% }); %>
+            </tbody>
+          </table>
+        </div>
+
+        <p class="mt-2 text-sm text-gray-600 text-center">Carga horaria total propuesta: <%= totalLoad %> créditos.</p>
+
+      <% } else if (typeof inProgressSubjects !== 'undefined' && inProgressSubjects && inProgressSubjects.length > 0) { %>
+
+        <!-- Tabla para materias en progreso -->
+        <div class="bg-white rounded-2xl shadow overflow-x-auto mb-3 inline-block">
+          <table class="min-w-full table-auto border-collapse mx-auto">
+            <thead class="bg-gray-200">
+              <tr>
+                <th class="px-4 py-2 text-left border">Hora</th>
+                <th class="px-4 py-2 text-left border">Lunes</th>
+                <th class="px-4 py-2 text-left border">Martes</th>
+                <th class="px-4 py-2 text-left border">Miércoles</th>
+                <th class="px-4 py-2 text-left border">Jueves</th>
+                <th class="px-4 py-2 text-left border">Viernes</th>
+                <th class="px-4 py-2 text-left border">Sábado</th>
+                <th class="px-4 py-2 text-left border">Domingo</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% 
+                // Mapa para materias en progreso
+                const inProgressMap = {};
+                ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'].forEach(day => {
+                  inProgressMap[day] = {};
+                  timeSlots.forEach(slot => {
+                    inProgressMap[day][slot] = [];
+                  });
+                });
+
+                // Llenar el mapa con materias en progreso, ocupando todas las franjas horarias correspondientes
+                inProgressSubjects.forEach(subject => {
+                  (subject.schedule || []).forEach(slot => {
+                    const [startTime, endTime] = slot.time.split('-');
+                    const startHour = parseInt(startTime.split(':')[0]);
+                    const endHour = parseInt(endTime.split(':')[0]);
+                    for (let hour = startHour; hour <= endHour; hour++) {
+                      if (hour >= 8 && hour <= 23) { // Limitar al rango 8:00-00:00
+                        const slotKey = `${hour.toString().padStart(2, '0')}:00-${hour.toString().padStart(2, '0')}:59`;
+                        if (inProgressMap[slot.day] && inProgressMap[slot.day][slotKey]) {
+                          inProgressMap[slot.day][slotKey].push({
+                            name: subject.code
+                          });
+                        }
+                      }
+                    }
+                  });
+                });
+
+                // Generar filas de la tabla
+                timeSlots.forEach(slot => { %>
+                  <tr class="border-b">
+                    <td class="px-4 py-2 border font-semibold text-gray-800"><%= slot.split('-')[0] %></td>
+                    <% ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'].forEach(day => { %>
+                      <td class="px-4 py-2 border">
+                        <% inProgressMap[day][slot].forEach(entry => { %>
+                          <div class="text-orange-600 font-semibold">
+                            <%= entry.name %>
+                          </div>
+                        <% }); %>
+                      </td>
+                    <% }); %>
+                  </tr>
+                <% }); %>
+            </tbody>
+          </table>
+        </div>
+
+        <p class="mt-2 text-sm text-gray-600 text-center">Materias en progreso: <%= inProgressSubjects.length %>. Carga actual: <%= totalLoad %> créditos.</p>
+
+      <% } else { %>
+        <p class="text-gray-600 text-center">No hay materias programadas ni en progreso.</p>
+      <% } %>
+    </div>
+
+       <!-- Sección de materias seleccionadas -->
+          <% if (typeof selectedSubjects !== 'undefined' && selectedSubjects && selectedSubjects.length > 0) { %>
+            <h3 class="text-xl font-semibold mt-6 mb-2 text-center">Materias Seleccionadas (Nuevas)</h3>
+            <ul class="mb-4 text-center">
+              <% selectedSubjects.forEach(subject => { %>
+                <li><%= subject.name %> (<%= subject.credits %> créditos)</li>
+              <% }) %>
+            </ul>
+            <p class="text-center"><strong>Carga horaria nueva:</strong> <%= totalCredits %> créditos</p>
+
+            <% if (typeof conflicts !== 'undefined' && conflicts && conflicts.length > 0) { %>
+              <h4 class="text-red-600 mt-2 text-center">Choques entre nuevas materias:</h4>
+              <% conflicts.forEach(conflict => { %>
+                <div class="bg-red-100 p-2 mb-2 rounded text-center">
+                  <p>Choque entre <%= conflict.subjects[0] %> y <%= conflict.subjects[1] %> el <%= conflict.day %>: <%= conflict.time1 %> vs <%= conflict.time2 %></p>
+                </div>
+              <% }) %>
+            <% } %>
+
+            <div class="mt-4 text-center">
+              <button id="cancelSelection" 
+                      class="bg-gray-500 text-white px-4 py-2 rounded transform hover:scale-105 transition duration-300 ease-in-out hover:bg-gray-600 mr-2">
+                Cancelar Selección
+              </button>
+              <form action="/student/confirm" method="POST" style="display: inline;" id="confirmForm">
+                <% selectedSubjects.forEach(subject => { %>
+                  <input type="hidden" name="selectedSubjects[]" value="<%= subject._id %>">
+                <% }) %>
+                <button type="submit"
+                        class="bg-green-500 text-white px-4 py-2 rounded transform hover:scale-105 transition duration-300 ease-in-out hover:bg-green-600"
+                        <%= (globalConflicts && globalConflicts.length > 0) ? "onclick=\"return confirm('Hay choques de horario. ¿Confirmar de todos modos?');\"" : "" %>>
+                  Confirmar Inscripción
+                </button>
+              </form>
+            </div>
+          <% } %>
+        </div>
+
+        <!-- Botón Volver al Dashboard -->
+        <div class="bg-white shadow-inner py-6">
+          <div class="flex justify-center">
+            <a href="/auth/student"
+               class="bg-blue-500 text-white font-medium px-6 py-3 rounded-lg shadow-md transform hover:scale-105 hover:bg-blue-600 transition duration-300 ease-in-out">
+              Volver al Dashboard
+            </a>
+          </div>
+        </div>
+
+        <!-- JS -->
+        <script>
+        document.addEventListener('DOMContentLoaded', () => {
+          const storedSubjects = JSON.parse(localStorage.getItem('selectedSubjects') || '[]');
+          const checkboxes = document.querySelectorAll('.subject-checkbox:not(:checked)');
+          checkboxes.forEach(checkbox => {
+            if (storedSubjects.some(subject => subject.id === checkbox.value)) {
+              checkbox.checked = true;
+            }
+          });
+
+          function syncLocalStorage() {
+            const selectedCheckboxes = document.querySelectorAll('.subject-checkbox:checked');
+            const selectedSubjects = Array.from(selectedCheckboxes).map(cb => JSON.parse(cb.getAttribute('data-subject'))).filter(Boolean);
+            localStorage.setItem('selectedSubjects', JSON.stringify(selectedSubjects));
+          }
+
+          const form = document.getElementById('selectionForm');
+          if (form) form.addEventListener('submit', syncLocalStorage);
+
+          document.querySelectorAll('.subject-checkbox').forEach(cb => cb.addEventListener('change', syncLocalStorage));
+
+          const cancelButton = document.getElementById('cancelSelection');
+          if (cancelButton) {
+            cancelButton.addEventListener('click', () => {
+              localStorage.removeItem('selectedSubjects');
+              document.querySelectorAll('.subject-checkbox:checked').forEach(cb => cb.checked = false);
+              window.location.href = '/student/selection';
+            });
+          }
+
+          if (window.location.search.includes('success=')) {
+            localStorage.removeItem('selectedSubjects');
+          }
+
+          if (window.location.search.includes('error=') && !window.location.search.includes('success=')) {
+            if (window.location.search.includes('confirm')) {
+              localStorage.removeItem('selectedSubjects');
+            }
+          }
+        });
+
+        // Función para mostrar/ocultar detalles
+        window.toggleReasons = function(id) {
+          const div = document.getElementById(`reasons-${id}`);
+          const btn = document.getElementById(`toggle-btn-${id}`);
+
+          if (div && btn) {
+            const isHidden = div.classList.contains('hidden');
+            div.classList.toggle('hidden');
+            btn.textContent = isHidden ? 'Ocultar' : 'Ver detalles';
+          }
+        };
+        </script>
+      </body>
+      </html>

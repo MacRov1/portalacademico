@@ -1,0 +1,107 @@
+                        <!DOCTYPE html>
+                        <html lang="es">
+                        <head>
+                          <meta charset="UTF-8">
+                          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                          <title>Verificador de Elegibilidad</title>
+                          <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+                        </head>
+                        <body class="bg-gradient-to-br from-blue-50 to-gray-100 flex flex-col min-h-screen font-sans">
+
+                          <div class="container mx-auto p-6 flex-grow">
+                            <h1 class="text-4xl font-extrabold mb-6 text-gray-800 text-center">Verificador de Elegibilidad</h1>
+
+                            <% if (error) { %>
+                              <p class="text-red-500 mb-4 font-medium text-center"><%= error %></p>
+                            <% } %>
+
+                            <% if (semesters && semesters.length > 0) { %>
+                              <% semesters.forEach(semester => { %>
+                                <div class="bg-white shadow-xl rounded-2xl p-4 mb-6">
+                                  <h2 class="text-2xl font-semibold text-gray-700 mb-3">Semestre <%= semester %></h2>
+
+                                  <!-- Materias disponibles -->
+                                  <h3 class="text-xl font-semibold text-green-700 mb-2">Materias disponibles para cursar</h3>
+                                  <% if (eligibilityBySemester[semester].eligible.length > 0) { %>
+                                    <ul class="mb-4">
+                                      <% eligibilityBySemester[semester].eligible.forEach(subject => { %>
+                                        <li class="bg-green-100 border border-green-300 p-2 mb-1 rounded">
+                                          <%= subject.code %> - <%= subject.name %> (Cumple todas las previas)
+                                        </li>
+                                      <% }) %>
+                                    </ul>
+                                  <% } else { %>
+                                    <p class="text-gray-600 mb-4">No hay materias disponibles para cursar en este semestre.</p>
+                                  <% } %>
+
+                                  <!-- Materias ya gestionadas -->
+                                  <h3 class="text-xl font-semibold text-blue-700 mb-2">Materias en curso o ya gestionadas</h3>
+                                  <% if (eligibilityBySemester[semester].alreadyProcessed.length > 0) { %>
+                                    <% eligibilityBySemester[semester].alreadyProcessed.forEach(subject => { %>
+                                      <% const reason = subject.reasons[0]; %>
+                                      <% if (reason === "Ya estás cursando esta materia actualmente.") { %>
+                                        <!-- Materia en curso -->
+                                        <div class="bg-blue-100 border border-blue-300 p-3 mb-2 rounded">
+                                          <p class="font-semibold"><%= subject.code %> - <%= subject.name %></p>
+                                          <p class="text-sm">Ya estás cursando esta materia actualmente.</p>
+                                        </div>
+                                      <% } else if (reason === "La materia ya fue aprobada. No puedes volver a inscribirte.") { %>
+                                        <!-- Materia aprobada -->
+                                        <div class="bg-green-200 border border-green-400 text-gray-900 p-3 mb-2 rounded">
+                                          <p class="font-semibold"><%= subject.code %> - <%= subject.name %></p>
+                                          <p class="text-sm">La materia ya fue aprobada. No puedes volver a inscribirte.</p>
+                                        </div>
+                                      <% } else if (reason === "Ya completaste el curso, pero tienes el examen pendiente.") { %>
+                                        <!-- Curso finalizado, examen pendiente -->
+                                        <div class="bg-yellow-100 border border-yellow-300 p-3 mb-2 rounded">
+                                          <p class="font-semibold"><%= subject.code %> - <%= subject.name %></p>
+                                          <p class="text-sm">Curso finalizado, examen pendiente.</p>
+                                        </div>
+                                      <% } else if (reason === "La materia ya está registrada como pendiente en tu historial.") { %>
+                                        <!-- Materia pendiente -->
+                                        <div class="bg-gray-200 border border-gray-400 p-3 mb-2 rounded">
+                                          <p class="font-semibold"><%= subject.code %> - <%= subject.name %></p>
+                                          <p class="text-sm">La materia ya está registrada como pendiente en tu historial.</p>
+                                        </div>
+                                      <% } %>
+                                    <% }) %>
+                                  <% } else { %>
+                                    <p class="text-gray-600 mb-4">No hay materias en curso o gestionadas en este semestre.</p>
+                                  <% } %>
+
+                                  <!-- Materias bloqueadas -->
+                                  <h3 class="text-xl font-semibold text-red-700 mb-2">Materias bloqueadas por prerrequisitos</h3>
+                                  <% if (eligibilityBySemester[semester].prerequisitesPending.length > 0) { %>
+                                    <% eligibilityBySemester[semester].prerequisitesPending.forEach(subject => { %>
+                                      <div class="bg-red-100 border border-red-300 p-3 mb-2 rounded">
+                                        <p class="font-semibold"><%= subject.code %> - <%= subject.name %></p>
+                                        <ul class="list-disc ml-5 text-sm">
+                                          <% subject.reasons.forEach(reason => { %>
+                                            <li><%= reason %></li>
+                                          <% }) %>
+                                        </ul>
+                                      </div>
+                                    <% }) %>
+                                  <% } else { %>
+                                    <p class="text-gray-600">No hay materias bloqueadas por prerrequisitos en este semestre.</p>
+                                  <% } %>
+
+                                </div>
+                              <% }) %>
+                            <% } else { %>
+                              <p class="text-gray-600 text-center">No hay semestres con materias disponibles.</p>
+                            <% } %>
+                          </div>
+
+                          <!-- Botón Volver al Dashboard -->
+                          <div class="bg-white shadow-inner py-6">
+                            <div class="flex justify-center">
+                              <a href="/auth/student"
+                                 class="bg-blue-600 text-white font-medium px-6 py-3 rounded-lg shadow-md transform hover:scale-105 hover:bg-blue-700 transition duration-300 ease-in-out">
+                                Volver al Dashboard
+                              </a>
+                            </div>
+                          </div>
+
+                        </body>
+                        </html>

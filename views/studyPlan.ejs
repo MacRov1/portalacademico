@@ -1,0 +1,95 @@
+      <!DOCTYPE html>
+      <html lang="es">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Plan de Estudios</title>
+        <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+      </head>
+      <body class="bg-gradient-to-br from-blue-50 to-gray-100 flex flex-col min-h-screen font-sans">
+
+        <div class="container mx-auto p-6 flex-grow">
+          <h1 class="text-4xl font-extrabold mb-6 text-gray-800 text-center">Plan de Estudios</h1>
+
+          <% if (error) { %>
+            <p class="text-red-500 mb-4 font-semibold text-center"><%= error %></p>
+          <% } %>
+
+          <% if (semesters && semesters.length > 0) { %>
+            <% semesters.forEach(semester => { %>
+              <h2 class="text-2xl font-bold mt-8 mb-4 text-gray-700 text-center">Semestre <%= semester %></h2>
+              <% const semesterSubjects = subjects.filter(s => s.semester === semester); %>
+              <% if (semesterSubjects.length > 0) { %>
+                <div class="flex justify-center mb-8">
+                  <div class="w-full max-w-5xl overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+                    <table class="w-full text-sm table-fixed border-collapse">
+                      <thead class="bg-gray-100 text-gray-700">
+                        <tr>
+                          <th class="border px-4 py-2 w-24">Código</th>
+                          <th class="border px-4 py-2 w-64">Nombre</th>
+                          <th class="border px-4 py-2 w-24">Créditos</th>
+                          <th class="border px-4 py-2 w-48">Horarios</th>
+                          <th class="border px-4 py-2 w-64">Previas</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <% semesterSubjects.forEach(subject => { %>
+                          <tr class="odd:bg-white even:bg-gray-50 hover:bg-blue-50 transition">
+                            <td class="border px-4 py-2"><%= subject.code %></td>
+                            <td class="border px-4 py-2 font-semibold text-gray-800"><%= subject.name %></td>
+                            <td class="border px-4 py-2"><%= subject.credits %></td>
+                            <td class="border px-4 py-2 text-sm text-gray-600">
+                              <% if (subject.schedule && subject.schedule.length > 0) { %>
+                                <% subject.schedule.forEach(slot => { %>
+                                  <div><span class="font-medium"><%= slot.day %>:</span> <%= slot.time %></div>
+                                <% }) %>
+                              <% } else { %>
+                                <span class="italic text-gray-400">Sin horarios</span>
+                              <% } %>
+                            </td>
+                            <td class="border px-4 py-2 text-sm text-gray-600">
+                              <% if (subject.prerequisites && subject.prerequisites.length > 0) { %>
+                                <% subject.prerequisites.forEach(prereq => { %>
+                                  <div>
+                                    <%= prereq.subjectId ? prereq.subjectId.name : 'N/A' %> (<%= prereq.type === 'exam' ? 'Examen' : 'Curso' %>)
+                                  </div>
+                                <% }) %>
+                              <% } else { %>
+                                <span class="italic text-gray-400">Sin previas</span>
+                              <% } %>
+                            </td>
+                          </tr>
+                        <% }) %>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              <% } else { %>
+                <p class="text-gray-600 mb-6 text-center">No hay materias para el semestre <%= semester %>.</p>
+              <% } %>
+            <% }) %>
+          <% } else { %>
+            <p class="text-gray-600 text-center">No hay semestres con materias disponibles.</p>
+          <% } %>
+        </div>
+
+        <!-- Botones al pie de la página -->
+        <div class="bg-white shadow-inner py-6 mt-auto">
+          <div class="flex justify-center space-x-4 flex-wrap">
+            <a href="/subjects/list"
+               class="bg-blue-500 text-white px-6 py-3 rounded-lg shadow-md hover:bg-blue-600 transform hover:scale-105 transition duration-300 ease-in-out">
+              Volver a la lista de materias
+            </a>
+            <a href="/auth/admin"
+               class="bg-blue-500 text-white px-6 py-3 rounded-lg shadow-md hover:bg-blue-600 transform hover:scale-105 transition duration-300 ease-in-out">
+              Panel Principal
+            </a>
+            <a href="/auth/logout"
+               class="bg-red-500 text-white px-6 py-3 rounded-lg shadow-md hover:bg-red-600 transform hover:scale-105 transition duration-300 ease-in-out">
+              Cerrar Sesión
+            </a>
+          </div>
+        </div>
+
+      </body>
+      </html>

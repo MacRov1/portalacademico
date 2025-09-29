@@ -1,0 +1,155 @@
+          <!DOCTYPE html>
+          <html lang="es">
+          <head>
+            <meta charset="UTF-8"/>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+            <title>Lista de Materias</title>
+            <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+          </head>
+          <body class="bg-gradient-to-br from-blue-50 via-white to-blue-100 min-h-screen flex flex-col font-sans">
+
+            <!-- Navbar -->
+            <nav class="bg-white shadow-md sticky top-0 z-10">
+              <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+                <h1 class="text-xl font-extrabold text-blue-600">Gestión de Materias</h1>
+                <a href="/auth/logout"
+                   class="bg-red-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-red-600 transition">
+                  Cerrar Sesión
+                </a>
+              </div>
+            </nav>
+
+            <!-- Contenido principal -->
+            <main class="flex-grow flex flex-col items-center px-6 py-10">
+              <div class="bg-white shadow-xl rounded-2xl p-8 w-full max-w-6xl">
+                <h2 class="text-3xl font-extrabold mb-8 text-gray-800 text-center">Materias Registradas</h2>
+
+                <!-- Botones principales -->
+                <div class="flex flex-wrap justify-center gap-4 mb-10">
+                  <a href="/subjects/create"
+                     class="bg-blue-500 text-white px-6 py-3 rounded-lg shadow-md hover:bg-blue-600 transform hover:-translate-y-1 transition">
+                    Crear Nueva Materia
+                  </a>
+                  <a href="/subjects/study-plan"
+                     class="bg-blue-500 text-white px-6 py-3 rounded-lg shadow-md hover:bg-blue-600 transform hover:-translate-y-1 transition">
+                    Ver Plan de Estudios
+                  </a>
+                  <a href="/auth/admin"
+                     class="bg-blue-500 text-white px-6 py-3 rounded-lg shadow-md hover:bg-blue-600 transform hover:-translate-y-1 transition">
+                    Panel Principal
+                  </a>
+                </div>
+
+                <% if (error) { %>
+                  <p class="text-red-500 mb-4 font-semibold text-center"><%= error %></p>
+                <% } %>
+
+                <!-- Buscador dinámico -->
+                <form class="mb-8 flex justify-center flex-wrap gap-2" onsubmit="return false;">
+                  <input type="text" id="searchInput" value="<%= search || '' %>"
+                         placeholder="Buscar materia por nombre"
+                         class="p-3 border rounded-lg w-full md:w-1/2 focus:outline-none focus:ring-2 focus:ring-blue-400 shadow-sm"/>
+                </form>
+
+                <!-- Contenedor dinámico -->
+                <div id="subjectsContainer">
+                  <% if (subjects && subjects.length > 0) { %>
+                    <div class="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+                      <table class="min-w-full text-sm text-left border-collapse">
+                        <thead class="bg-gray-100 text-gray-700">
+                          <tr>
+                            <th class="px-4 py-3 border-b">Código</th>
+                            <th class="px-4 py-3 border-b">Nombre</th>
+                            <th class="px-4 py-3 border-b">Créditos</th>
+                            <th class="px-4 py-3 border-b">Semestre</th>
+                            <th class="px-4 py-3 border-b">Horarios</th>
+                            <th class="px-4 py-3 border-b">Previas</th>
+                            <th class="px-4 py-3 border-b text-center">Acciones</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <% subjects.forEach(subject => { %>
+                            <tr class="odd:bg-white even:bg-gray-50 hover:bg-blue-50 transition">
+                              <td class="px-4 py-2 border-b"><%= subject.code %></td>
+                              <td class="px-4 py-2 border-b font-semibold text-gray-800"><%= subject.name %></td>
+                              <td class="px-4 py-2 border-b"><%= subject.credits %></td>
+                              <td class="px-4 py-2 border-b"><%= subject.semester %></td>
+                              <td class="px-4 py-2 border-b text-gray-600">
+                                <% if (subject.schedule && subject.schedule.length > 0) { %>
+                                  <% subject.schedule.forEach(slot => { %>
+                                    <div><span class="font-medium"><%= slot.day %>:</span> <%= slot.time %></div>
+                                  <% }) %>
+                                <% } else { %>
+                                  <span class="italic text-gray-400">Sin horarios</span>
+                                <% } %>
+                              </td>
+                              <td class="px-4 py-2 border-b text-gray-600">
+                                <% if (subject.prerequisites && subject.prerequisites.length > 0) { %>
+                                  <% subject.prerequisites.forEach(prereq => { %>
+                                    <div>
+                                      <%= prereq.subjectId ? prereq.subjectId.name : 'N/A' %>
+                                      (<%= prereq.type === 'exam' ? 'Examen' : 'Curso' %>)
+                                    </div>
+                                  <% }) %>
+                                <% } else { %>
+                                  <span class="italic text-gray-400">Sin previas</span>
+                                <% } %>
+                              </td>
+                              <td class="px-4 py-2 border-b text-center space-x-2">
+                                <a href="/subjects/edit/<%= subject._id %>"
+                                   class="inline-block bg-blue-500 text-white px-3 py-1 rounded-md shadow hover:bg-blue-600 transition">
+                                  Editar
+                                </a>
+                                <a href="/subjects/delete/<%= subject._id %>"
+                                   class="inline-block bg-red-500 text-white px-3 py-1 rounded-md shadow hover:bg-red-600 transition"
+                                   onclick="return confirm('¿Estás seguro de eliminar esta materia?')">
+                                  Eliminar
+                                </a>
+                              </td>
+                            </tr>
+                          <% }) %>
+                        </tbody>
+                      </table>
+                    </div>
+                  <% } else { %>
+                    <p class="text-gray-600 text-center">No hay materias registradas.</p>
+                  <% } %>
+                </div>
+              </div>
+            </main>
+
+            <script>
+              (function () {
+                const searchInput = document.getElementById('searchInput');
+                const container = document.getElementById('subjectsContainer');
+                let debounceTimer = null;
+
+                async function fetchAndUpdate(query) {
+                  try {
+                    const res = await fetch(`/subjects/list?search=${encodeURIComponent(query)}`, {
+                      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    });
+                    const text = await res.text();
+
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(text, 'text/html');
+                    const newContainer = doc.getElementById('subjectsContainer');
+
+                    if (newContainer) {
+                      container.innerHTML = newContainer.innerHTML;
+                    }
+                  } catch (err) {
+                    console.error('Error fetching subjects:', err);
+                  }
+                }
+
+                searchInput.addEventListener('input', () => {
+                  clearTimeout(debounceTimer);
+                  debounceTimer = setTimeout(() => {
+                    fetchAndUpdate(searchInput.value.trim());
+                  }, 300);
+                });
+              })();
+            </script>
+          </body>
+          </html>

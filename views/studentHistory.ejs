@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Historial Académico</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-gray-100 flex flex-col min-h-screen font-sans">
+
+  <div class="container mx-auto p-6 flex-grow">
+    <h1 class="text-4xl font-extrabold mb-6 text-gray-800 text-center">Historial Académico</h1>
+
+    <% if (typeof error !== 'undefined' && error) { %>
+      <p class="text-red-500 mb-4 font-medium text-center"><%= error %></p>
+    <% } %>
+    <% if (typeof success !== 'undefined' && success) { %>
+      <p class="text-green-500 mb-4 font-medium text-center"><%= success %></p>
+    <% } %>
+
+    <p class="mb-6 text-lg font-semibold text-gray-700 text-center">
+      Créditos totales obtenidos: <%= totalCredits %>
+    </p>
+
+    <% if (semesters.length > 0) { %>
+      <% semesters.forEach(semester => { %>
+        <div class="bg-white shadow-xl rounded-2xl p-4 mb-6">
+          <h2 class="text-2xl font-semibold text-gray-700 mb-4">Semestre <%= semester %></h2>
+          <div class="overflow-x-auto">
+            <table class="w-full table-auto border-collapse text-sm">
+              <thead>
+                <tr class="bg-gray-200 text-gray-700">
+                  <th class="border p-3 text-left">Código</th>
+                  <th class="border p-3 text-left">Nombre</th>
+                  <th class="border p-3 text-center">Créditos Obtenidos</th>
+                  <th class="border p-3 text-center">Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% historyBySemester[semester].forEach(entry => { %>
+                  <tr class="hover:bg-gray-50 transition duration-200">
+                    <td class="border p-3"><%= entry.subjectId ? entry.subjectId.code : 'N/A' %></td>
+                    <td class="border p-3"><%= entry.subjectId ? entry.subjectId.name : 'N/A' %></td>
+                    <td class="border p-3 text-center"><%= entry.creditsEarned %></td>
+                    <td class="border p-3 text-center">
+                      <% if (entry.status !== 'approved') { %>
+                        <form action="/student/history/edit/<%= entry._id %>" method="POST" class="inline-flex items-center space-x-2">
+                          <select name="status" class="p-1 border rounded" required>
+                            <option value="pending" <%= entry.status === 'pending' ? 'selected' : '' %>>Pendiente</option>
+                            <option value="in_progress" <%= entry.status === 'in_progress' ? 'selected' : '' %>>En curso</option>
+                            <option value="completed_course_exam_pending" <%= entry.status === 'completed_course_exam_pending' ? 'selected' : '' %>>Cursado (examen pendiente)</option>
+                            <option value="approved">Aprobado (ganarás <%= entry.subjectId ? entry.subjectId.credits : 0 %> créditos)</option>
+                          </select>
+                          <input type="hidden" name="credits" value="<%= entry.subjectId ? entry.subjectId.credits : 0 %>">
+                          <button type="submit" class="bg-blue-500 text-white px-3 py-1 rounded-lg shadow-md transform hover:scale-105 hover:bg-blue-600 transition duration-300 ease-in-out">
+                            Actualizar
+                          </button>
+                        </form>
+                      <% } else { %>
+                        Aprobado
+                      <% } %>
+                    </td>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      <% }) %>
+    <% } else { %>
+      <p class="text-gray-600 text-center">No hay historial académico disponible.</p>
+    <% } %>
+
+    <!-- Formulario para carga manual -->
+    <h2 class="text-2xl font-bold mt-8 mb-4 text-gray-800 text-center">Añadir Materia al Historial</h2>
+    <form action="/student/history/add" method="POST" class="bg-white p-6 rounded-2xl shadow-xl max-w-2xl mx-auto">
+      <div class="mb-4">
+        <label for="subjectId" class="block text-sm font-medium text-gray-700">Materia</label>
+        <select name="subjectId" id="subjectId" class="mt-1 p-2 w-full border rounded" required>
+          <option value="">Seleccione una materia</option>
+          <% if (allSubjects && allSubjects.length > 0) { %>
+            <% const semesters = [...new Set(allSubjects.map(subject => subject.semester))].sort((a, b) => a - b); %>
+            <% semesters.forEach(semester => { %>
+              <optgroup label="Semestre <%= semester %>">
+                <% allSubjects.filter(subject => subject.semester === semester).forEach(subject => { %>
+                  <option value="<%= subject._id %>">
+                    <%= subject.code %> - <%= subject.name %> (<%= subject.credits %> créditos)
+                  </option>
+                <% }) %>
+              </optgroup>
+            <% }) %>
+          <% } else { %>
+            <option value="">No hay materias disponibles</option>
+          <% } %>
+        </select>
+      </div>
+      <div class="mb-4">
+        <label for="status" class="block text-sm font-medium text-gray-700">Estado</label>
+        <select name="status" id="status" class="mt-1 p-2 w-full border rounded" required>
+          <option value="pending">Pendiente</option>
+          <option value="in_progress">En curso</option>
+          <option value="completed_course_exam_pending">Cursado (examen pendiente)</option>
+          <option value="approved">Aprobado</option>
+        </select>
+      </div>
+      <button type="submit" class="bg-blue-500 text-white font-medium px-6 py-2 rounded-lg shadow-md transform hover:scale-105 hover:bg-blue-600 transition duration-300 ease-in-out">
+        Añadir al Historial
+      </button>
+    </form>
+  </div>
+
+  <!-- Botón Volver al Dashboard debajo de todo -->
+  <div class="bg-white shadow-inner py-6">
+    <div class="flex justify-center">
+      <a href="/auth/student"
+         class="bg-blue-500 text-white font-medium px-6 py-3 rounded-lg shadow-md transform hover:scale-105 hover:bg-blue-600 transition duration-300 ease-in-out">
+        Volver al Dashboard
+      </a>
+    </div>
+  </div>
+
+</body>
+</html>

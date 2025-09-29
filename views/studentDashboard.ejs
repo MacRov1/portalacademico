@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel de Estudiante</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+</head>
+<body class="bg-gradient-to-br from-blue-50 via-white to-blue-100 min-h-screen flex flex-col">
+
+  <!-- Navbar -->
+  <nav class="bg-white shadow-md sticky top-0 z-10">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+      <h1 class="text-xl font-bold text-blue-600">Panel de Estudiante</h1>
+      <a href="/auth/logout" class="text-red-500 font-medium hover:text-red-600 transition">Cerrar Sesión</a>
+    </div>
+  </nav>
+
+  <!-- Contenido centrado -->
+  <main class="flex-grow flex flex-col items-center justify-center text-center px-6">
+    <div class="mb-8">
+      <h2 class="text-3xl font-semibold text-gray-800">Bienvenido, <span class="text-blue-600"><%= user.username %></span></h2>
+      <p class="text-gray-500 mt-2">Elige una de las siguientes opciones para continuar:</p>
+    </div>
+
+    <!-- Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl w-full">
+      <a href="/student/history" class="group bg-white/90 backdrop-blur-sm shadow-lg rounded-2xl p-8 flex flex-col items-center hover:shadow-2xl hover:-translate-y-1 transition transform">
+        <div class="w-14 h-14 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 text-2xl mb-4 group-hover:bg-blue-200">
+          📜
+        </div>
+        <h3 class="text-lg font-semibold text-gray-800">Ver Historial</h3>
+        <p class="text-gray-500 text-sm mt-2">Consulta tus materias aprobadas, reprobadas y en curso.</p>
+      </a>
+
+      <a href="/student/eligibility" class="group bg-white/90 backdrop-blur-sm shadow-lg rounded-2xl p-8 flex flex-col items-center hover:shadow-2xl hover:-translate-y-1 transition transform">
+        <div class="w-14 h-14 flex items-center justify-center rounded-full bg-green-100 text-green-600 text-2xl mb-4 group-hover:bg-green-200">
+          ✅
+        </div>
+        <h3 class="text-lg font-semibold text-gray-800">Verificar Elegibilidad</h3>
+        <p class="text-gray-500 text-sm mt-2">Revisa si puedes inscribirte a nuevas materias.</p>
+      </a>
+
+      <a href="/student/selection" class="group bg-white/90 backdrop-blur-sm shadow-lg rounded-2xl p-8 flex flex-col items-center hover:shadow-2xl hover:-translate-y-1 transition transform">
+        <div class="w-14 h-14 flex items-center justify-center rounded-full bg-purple-100 text-purple-600 text-2xl mb-4 group-hover:bg-purple-200">
+          📚
+        </div>
+        <h3 class="text-lg font-semibold text-gray-800">Seleccionar Materias</h3>
+        <p class="text-gray-500 text-sm mt-2">Inscríbete a las materias disponibles este semestre.</p>
+      </a>
+    </div>
+  </main>
+
+  <!-- Notificaciones -->
+  <div id="notifications" class="fixed bottom-5 right-5 space-y-3"></div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const socket = io();
+
+      socket.on("newSubject", (data) => {
+        const notificationsDiv = document.getElementById("notifications");
+        if (notificationsDiv) {
+          const notification = document.createElement("div");
+          notification.className = "bg-green-100 border border-green-300 text-green-800 px-4 py-3 rounded-lg shadow-md animate-fade-in";
+          notification.innerHTML = `
+            <strong class="block font-medium">Nueva Materia Disponible</strong>
+            <span class="text-sm">${data.message} <br> (Semestre: ${data.subject.semester}, Créditos: ${data.subject.credits})</span>
+          `;
+          notificationsDiv.appendChild(notification);
+
+          setTimeout(() => {
+            notification.classList.add("opacity-0", "transition", "duration-500");
+            setTimeout(() => notification.remove(), 500);
+          }, 5000);
+        }
+      });
+    });
+  </script>
+
+  <!-- Animación para notificaciones -->
+  <style>
+    @keyframes fade-in {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in {
+      animation: fade-in 0.3s ease-out;
+    }
+  </style>
+
+</body>
+</html>
